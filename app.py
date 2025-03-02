@@ -17,7 +17,7 @@ if uploaded_file:
         sheet_names = xls.sheet_names
 
         # Display available sheets (for debugging)
-        st.write("🔍 Available Sheets:", sheet_names)
+        st.write("🔍 Available Employees:", sheet_names)
 
         # Driver selection (Only show if valid sheets exist)
         drivers = ["MOUSSA", "PATHE"]
