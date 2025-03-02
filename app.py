@@ -27,13 +27,13 @@ if uploaded_file:
             # Load the correct sheet with the correct header row (row 3 in Excel, so header=2 in Pandas)
             df = pd.read_excel(xls, sheet_name=selected_driver, header=2)
 
+            # **Force column headers to strings**
+            df.columns = df.columns.astype(str)
+
             # Print column names for debugging
             st.write("🔍 Columns in Excel File:", df.columns.tolist())
 
             # **Fix Potential Column Naming Issue**
-            df.columns = df.columns.str.strip()  # Remove leading/trailing spaces
-
-            # **Try renaming dynamically if "HEURES EN NOMBRE" exists**
             for col in df.columns:
                 if "HEURES" in col and "NOMBRE" in col:  # Flexible match
                     df.rename(columns={col: "Hours_Worked"}, inplace=True)
@@ -45,7 +45,7 @@ if uploaded_file:
             if "Hours_Worked" not in df.columns:
                 st.error("❌ Could not find 'Hours_Worked' column. Check the Excel file.")
             else:
-                # Process Data
+                # Convert to numeric
                 df["Hours_Worked"] = pd.to_numeric(df["Hours_Worked"], errors="coerce")
                 
                 # Remove "TOTAL" Rows
@@ -53,7 +53,7 @@ if uploaded_file:
 
                 # Categorize Work Hours
                 def classify_hours(row):
-                    if row["JOUR"] in ["SAMEDI", "DIMANCHE"] or pd.notna(row["REMARQUES"]):
+                    if isinstance(row["JOUR"], str) and (row["JOUR"] in ["SAMEDI", "DIMANCHE"] or pd.notna(row["REMARQUES"])):
                         return "Weekend/Holiday"
                     return "Mid-Week"
 
