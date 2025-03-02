@@ -1,75 +1,85 @@
 import streamlit as st
 import pandas as pd
 
-def process_salary(file, salary):
-    df = pd.read_csv(file, header=3)  # Load CSV file
+# Title
+st.title("🚖 Salary Calculator Web App")
 
-    # Fix Column Names
-    df.rename(columns={"HEURES\nEN NOMBRE": "Hours_Worked"}, inplace=True)
+# File Upload
+uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx"])
 
-    # Convert Hours to Numeric
-    df["Hours_Worked"] = pd.to_numeric(df["Hours_Worked"], errors="coerce")
+# If file is uploaded, process it
+if uploaded_file:
+    # Load the Excel file
+    xls = pd.ExcelFile(uploaded_file)
+    
+    # Get available sheet names (for debugging)
+    sheet_names = xls.sheet_names
+    st.write("🔍 Available Sheets in File:", sheet_names)
 
-    # Remove "TOTAL" Rows
-    df = df[~df["JOUR"].str.contains("TOTAL", na=False)]
+    # Select Driver (Only Moussa or Pathe)
+    selected_driver = st.radio("Select Driver:", ["Moussa", "Pathe"])
 
-    # Categorize Work Hours
-    def classify_hours(row):
-        if row["JOUR"] in ["SAMEDI", "DIMANCHE"] or pd.notna(row["REMARQUES"]):  
-            return "Weekend/Holiday"
-        return "Mid-Week"
+    # Check if the sheet exists in the Excel file
+    if selected_driver in sheet_names:
+        # Load the correct sheet
+        df = pd.read_excel(xls, sheet_name=selected_driver, header=3)
 
-    df["Category"] = df.apply(classify_hours, axis=1)
+        # Rename columns for processing
+        df.rename(columns={"HEURES\nEN NOMBRE": "Hours_Worked"}, inplace=True)
 
-    # Compute Base Work Hours
-    total_hours = df["Hours_Worked"].sum()
-    weekend_hours = df[df["Category"] == "Weekend/Holiday"]["Hours_Worked"].sum()
-    midweek_hours = df[df["Category"] == "Mid-Week"]["Hours_Worked"].sum()
+        # Convert Hours to Numeric
+        df["Hours_Worked"] = pd.to_numeric(df["Hours_Worked"], errors="coerce")
 
-    # Extract Extra Hours Table
-    df_extra = df[["HS", "0.15", "0.4", "0.6", "1"]].dropna(how="all")
-    df_extra = df_extra.apply(pd.to_numeric, errors="coerce")
-    total_extra_hours = df_extra["HS"].sum()
+        # Remove "TOTAL" Rows
+        df = df[~df["JOUR"].astype(str).str.contains("TOTAL", na=False)]
 
-    # Compute Salary Distributions
-    total_salary = salary
-    overtime_salary = (total_extra_hours / (total_hours + total_extra_hours)) * total_salary
-    regular_salary = total_salary - overtime_salary
+        # Categorize Work Hours
+        def classify_hours(row):
+            if row["JOUR"] in ["SAMEDI", "DIMANCHE"] or pd.notna(row["REMARQUES"]):
+                return "Weekend/Holiday"
+            return "Mid-Week"
 
-    # Overtime Tariff Distribution
-    tariff_15_salary = overtime_salary * (df_extra["0.15"].sum() / total_extra_hours)
-    tariff_40_salary = overtime_salary * (df_extra["0.4"].sum() / total_extra_hours)
-    tariff_60_salary = overtime_salary * (df_extra["0.6"].sum() / total_extra_hours)
-    tariff_100_salary = overtime_salary * (df_extra["1"].sum() / total_extra_hours)
+        df["Category"] = df.apply(classify_hours, axis=1)
 
-    # Split Salaries into Minhala and Batmach
-    minhala_salary = (midweek_hours / total_hours) * regular_salary + tariff_15_salary + tariff_40_salary
-    batmach_salary = (weekend_hours / total_hours) * regular_salary + tariff_60_salary + tariff_100_salary
+        # Compute Work Hours
+        total_hours = df["Hours_Worked"].sum()
+        weekend_hours = df[df["Category"] == "Weekend/Holiday"]["Hours_Worked"].sum()
+        midweek_hours = df[df["Category"] == "Mid-Week"]["Hours_Worked"].sum()
 
-    return {
-        "Total Hours Worked": round(total_hours, 2),
-        "Weekend/Holiday Hours": round(weekend_hours, 2),
-        "Mid-Week Hours": round(midweek_hours, 2),
-        "Total Salary": round(total_salary, 2),
-        "Batmach Salary": round(batmach_salary, 2),
-        "Minhala Salary": round(minhala_salary, 2),
-    }
+        # Extract Extra Hours Table
+        df_extra = df[["HS", "0.15", "0.4", "0.6", "1"]].dropna(how="all")
 
-# 🌐 Streamlit Web Interface
-st.title("Salary Calculator Web App")
+        # Convert Extra Hours to Numeric
+        df_extra = df_extra.apply(pd.to_numeric, errors="coerce")
+        total_extra_hours = df_extra["HS"].sum()
 
-uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
-salary_input = st.number_input("Enter Salary (CFA)", min_value=0, value=5000)
+        # Salary Input
+        total_salary = st.number_input("Enter Salary (CFA)", min_value=0, value=5000, step=1000)
 
-if st.button("Calculate Salary Breakdown") and uploaded_file:
-    results = process_salary(uploaded_file, salary_input)
-    st.write("### Work Hours Breakdown")
-    st.write(f"**Total Hours Worked:** {results['Total Hours Worked']}")
-    st.write(f"**Weekend/Holiday Hours:** {results['Weekend/Holiday Hours']}")
-    st.write(f"**Mid-Week Hours:** {results['Mid-Week Hours']}")
+        # Compute Salary Distributions
+        overtime_salary = (total_extra_hours / (total_hours + total_extra_hours)) * total_salary
+        regular_salary = total_salary - overtime_salary
 
-    st.write("### Salary Breakdown")
-    st.write(f"**Total Salary:** {results['Total Salary']} CFA")
-    st.write(f"**Batmach Salary:** {results['Batmach Salary']} CFA")
-    st.write(f"**Minhala Salary:** {results['Minhala Salary']} CFA")
+        # Overtime Tariff Distribution
+        tariff_15_salary = overtime_salary * (df_extra["0.15"].sum() / total_extra_hours)
+        tariff_40_salary = overtime_salary * (df_extra["0.4"].sum() / total_extra_hours)
+        tariff_60_salary = overtime_salary * (df_extra["0.6"].sum() / total_extra_hours)
+        tariff_100_salary = overtime_salary * (df_extra["1"].sum() / total_extra_hours)
 
+        # Split Salaries into Minhala and Batmach
+        midweek_final_salary = (midweek_hours / total_hours) * regular_salary + tariff_15_salary + tariff_40_salary
+        weekend_final_salary = (weekend_hours / total_hours) * regular_salary + tariff_60_salary + tariff_100_salary
+
+        # Display Results
+        st.subheader("📊 Work Hours Breakdown")
+        st.write(f"**Total Hours Worked:** {total_hours:.2f}")
+        st.write(f"**Weekend/Holiday Hours:** {weekend_hours:.2f}")
+        st.write(f"**Mid-Week Hours:** {midweek_hours:.2f}")
+
+        st.subheader("💰 Salary Breakdown")
+        st.write(f"**Total Salary:** {total_salary:.2f} CFA")
+        st.write(f"**Minhala Salary (Weekend/Holiday + Relevant Extra Hours):** {weekend_final_salary:.2f} CFA")
+        st.write(f"**Batmach Salary (Mid-Week + Relevant Extra Hours):** {midweek_final_salary:.2f} CFA")
+
+    else:
+        st.error(f"❌ Sheet '{selected_driver}' not found in the Excel file. Please check the file.")
