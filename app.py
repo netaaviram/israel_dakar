@@ -20,7 +20,7 @@ if uploaded_file:
         st.write("🔍 Available Sheets:", sheet_names)
 
         # Driver selection (Only show if valid sheets exist)
-        drivers = ["Moussa", "Pathe"]
+        drivers = ["MOUSSA", "PATHE"]
         selected_driver = st.radio("Select Driver:", drivers)
 
         if selected_driver in sheet_names:
