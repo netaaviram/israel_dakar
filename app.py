@@ -25,7 +25,7 @@ if uploaded_file:
 
         if selected_driver in sheet_names:
             # Load the correct sheet with the correct header row (row 3 in Excel, so header=2 in Pandas)
-            df = pd.read_excel(xls, sheet_name=selected_driver, header=2)
+            df = pd.read_excel(xls, sheet_name=selected_driver, header=1)
 
             # **Force column headers to strings**
             df.columns = df.columns.astype(str)
