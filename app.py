@@ -24,12 +24,15 @@ if uploaded_file:
 
         if selected_driver in sheet_names:
             # Load the correct sheet
-            df = pd.read_excel(xls, sheet_name=selected_driver, header=1)  # ✅ Use header=2
+            df = pd.read_excel(xls, sheet_name=selected_driver, header=1)  # ✅ Use header=1
 
             # Debug column names
             st.write("🔍 Columns Detected in Excel File:", df.columns.tolist())
 
-            # Ensure the correct column name is used
+            # 🔹 1️⃣ Fix column names
+            df.columns = df.columns.map(str).str.strip()  # Convert to string and remove spaces
+
+            # 🔹 2️⃣ Rename necessary columns
             column_mapping = {
                 "HEURES EN NOMBRE": "Hours_Worked",
                 "HEURES\nEN NOMBRE": "Hours_Worked"  # In case of line break issue
@@ -40,7 +43,7 @@ if uploaded_file:
                 if key in df.columns:
                     df.rename(columns={key: column_mapping[key]}, inplace=True)
 
-            # Check if Hours_Worked exists now
+            # 🔹 3️⃣ Ensure 'Hours_Worked' column exists
             if "Hours_Worked" not in df.columns:
                 st.error("❌ Could not find 'Hours_Worked' column. Check the Excel file.")
                 st.stop()
@@ -65,8 +68,16 @@ if uploaded_file:
             weekend_hours = df[df["Category"] == "Weekend/Holiday"]["Hours_Worked"].sum()
             midweek_hours = df[df["Category"] == "Mid-Week"]["Hours_Worked"].sum()
 
+            # 🔹 4️⃣ Validate if extra hours columns exist
+            extra_cols = ["HS", "0.15", "0.4", "0.6", "1"]
+            missing_cols = [col for col in extra_cols if col not in df.columns]
+
+            if missing_cols:
+                st.error(f"❌ Missing columns in Excel: {missing_cols}")
+                st.stop()
+
             # Extract Extra Hours Table
-            df_extra = df[["HS", "0.15", "0.4", "0.6", "1"]].dropna(how="all")
+            df_extra = df[extra_cols].dropna(how="all")
             df_extra = df_extra.apply(pd.to_numeric, errors="coerce")
             total_extra_hours = df_extra["HS"].sum()
 
