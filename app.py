@@ -103,8 +103,8 @@ if uploaded_file:
 
             st.subheader("💰 Salary Breakdown")
             st.write(f"**Total Salary:** {total_salary:.2f} CFA")
-            st.write(f"**Minhala Salary (Weekend/Holiday + Relevant Extra Hours):** {weekend_final_salary:.2f} CFA")
-            st.write(f"**Batmach Salary (Mid-Week + Relevant Extra Hours):** {midweek_final_salary:.2f} CFA")
+            st.write(f"**Batmach Salary (Weekend/Holiday + Relevant Extra Hours):** {weekend_final_salary:.2f} CFA")
+            st.write(f"**Minhala Salary (Mid-Week + Relevant Extra Hours):** {midweek_final_salary:.2f} CFA")
 
         else:
             st.error(f"❌ Sheet '{selected_driver}' not found in the Excel file. Please check the file.")
