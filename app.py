@@ -24,7 +24,7 @@ if uploaded_file:
 
         if selected_driver in sheet_names:
             # Load the correct sheet
-            df = pd.read_excel(xls, sheet_name=selected_driver, header=1)  # ✅ Use header=1
+            df = pd.read_excel(xls, sheet_name=selected_driver, header=2)  # ✅ Use header=1
 
             # Debug column names
             st.write("🔍 Columns Detected in Excel File:", df.columns.tolist())
